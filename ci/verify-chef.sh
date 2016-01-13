@@ -78,12 +78,17 @@ export FORCE_FFI_YAJL
 PATH=/opt/$PROJECT_NAME/bin:/opt/$PROJECT_NAME/embedded/bin:$PATH
 export PATH
 
-# Test against the vendored Chef gem
-cd /opt/$PROJECT_NAME/embedded/lib/ruby/gems/*/gems/chef-[0-9]*
+if [ "x$ACCEPTANCE" != "x" ]; then
+  cd /opt/$PROJECT_NAME/embedded/apps/chef/acceptance
+  bundle install && bundle exec chef-acceptance test gem_versions
+else
+  # Test against the vendored Chef gem
+  cd /opt/$PROJECT_NAME/embedded/lib/ruby/gems/*/gems/chef-[0-9]*
 
-if [ ! -f "Gemfile.lock" ]; then
-  echo "Chef gem does not contain a Gemfile.lock! This is needed to run any tests."
-  exit 1
+  if [ ! -f "Gemfile.lock" ]; then
+    echo "Chef gem does not contain a Gemfile.lock! This is needed to run any tests."
+    exit 1
+  fi
+
+  sudo env PATH=$PATH TERM=xterm bundle exec rspec -r rspec_junit_formatter -f RspecJunitFormatter -o $WORKSPACE/test.xml -f documentation spec/functional spec/unit
 fi
-
-sudo env PATH=$PATH TERM=xterm bundle exec rspec -r rspec_junit_formatter -f RspecJunitFormatter -o $WORKSPACE/test.xml -f documentation spec/functional spec/unit
